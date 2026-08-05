@@ -18,6 +18,7 @@ import winsound
 import csv
 import dotenv
 import logging
+from adapters.script_files import ScriptFiles
 
 # Object for executing queries
 class Querier:
@@ -41,30 +42,19 @@ class Querier:
         except Exception as e:
             raise e
 
-    def selectQuery(self, queryName):
-        logging.info(f"Loading query \"{queryName}\"...")
-        self.query_name = queryName
-        try:
-            with open(f"{os.getenv('query_filepath')}/{self.query_name}", "r") as q:
-                query = ""
-                for line in q:
-                    query += line
-                self.query = query
-                paramlist = re.findall('\{.*?\}', query)
-                for i, item in enumerate(paramlist):
-                    item = item [1:-1]
-                    paramlist[i] = item
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Query File:\n{self.query_name}\nnot found")
-        logging.info(f"Query \"{queryName}\" Loaded.\n")
+    def parseParameters(self, script:str) -> list[str]:
+        logging.info(f"Parsing parameters...")
+        paramlist = re.findall('\{.*?\}', script)
+        for i, item in enumerate(paramlist):
+            item = item [1:-1]
+            paramlist[i] = item
         return paramlist
 
-    def runQuery(self, param_list):
+    def runQuery(self, script:str, param_list: list[dict]):
         self.connect()
         if self.query_name == '':
             logging.warning("Query name must not be empty")
             PopupWindow("Query name must not be empty")
-        paramed_query = self.query
         for param in param_list:
             try:
                 paramName = '{' + param['originalname'] + '}'
@@ -80,17 +70,17 @@ class Querier:
                 except:
                     paramValue = str(param['entry'].get())
             logging.info(paramValue)
-            paramed_query = paramed_query.replace(paramName, paramValue)
+            script = script.replace(paramName, paramValue)
         #try:
         logging.info("Excecuting Query...")
-        self.cursor.execute(paramed_query)
+        self.cursor.execute(script)
         
         #except Exception as e:
          #   raise e
         logging.info("Query Excecuted Successfully.\n")
         return 0
 
-    def saveResults(self, outfile_name):
+    def saveResults(self, outfile_name: str):
         logging.info("Saving Query Results...")
         if outfile_name.find('.') == -1:
             outpath = f"{os.getenv('output_filepath')}/{outfile_name}.tsv"
@@ -138,10 +128,12 @@ class PopupWindow:
 # Includes buttons to open the query display and to run the query
 
 class ActionMenu:
-    def __init__(self, querier):
+    def __init__(self, querier, script_files):
         logging.info("Initializing Action Menu...")
 
         self.querier = querier
+        self.script_files = script_files
+        self.script = ""
 
         self.act_menu = tk.Tk()
         self.act_menu.configure(background="lavender")
@@ -163,10 +155,7 @@ class ActionMenu:
         self.query_desc.pack(side='top')
 
         # Query Select Dropdown
-        options = []
-        for file in os.listdir(f"./{os.getenv('query_filepath')}"):
-            if file.endswith('.sql'):
-                options.append(file)
+        options = self.script_files.list_script_files()
         self.config_input_options = ttk.Combobox(self.act_menu, value=options, width=45)
         self.config_input_options.bind("<<ComboboxSelected>>", self.querySelected)
         #self.config_input_options.grid(row=1, column=1, columnspan=2)
@@ -226,8 +215,11 @@ class ActionMenu:
             logging.warning(e.with_traceback.__dict__)
             PopupWindow(e)        
         self.param_objects.clear()
+
+        self.querier.query_name = self.config_input_options.get()
+        self.script = self.script_files.read_script_file(self.querier.query_name)
         try:
-            params = self.querier.selectQuery(self.config_input_options.get())
+            params = self.querier.parseParameters(self.script)
         except Exception as e:
             logging.warning(e.with_traceback)
             winsound.MessageBeep()
@@ -308,7 +300,7 @@ class ActionMenu:
         file = self.file_prompt.get()
         
         try:
-            self.querier.runQuery(self.param_objects)
+            self.querier.runQuery(self.script, self.param_objects)
             self.querier.saveResults(file)
         except Exception as e:
             logging.warning(e.with_traceback)
@@ -347,7 +339,8 @@ def launch():
         PopupWindow(e)
         return
     
-    ActionMenu(querier)
+    script_files = ScriptFiles(os.path.abspath(os.getenv('query_filepath')))
+    ActionMenu(querier=querier, script_files=script_files)
 
 if __name__ == "__main__":
     dotenv.load_dotenv()
