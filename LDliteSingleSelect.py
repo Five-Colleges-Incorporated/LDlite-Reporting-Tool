@@ -5,7 +5,7 @@ the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version. See the file "[COPYING](COPYING)" for more details.
 """
 from tkcalendar import DateEntry
-import psycopg as postgres
+import psycopg2 as postgres
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
@@ -19,8 +19,6 @@ import csv
 import dotenv
 import logging
 from adapters.script_files import ScriptFiles
-import parameterized_scripts
-from parameterized_scripts import ParameterType, ParameterDefinition, ParameterValue, ParameterValidationError
 
 # Object for executing queries
 class Querier:
@@ -32,15 +30,11 @@ class Querier:
         logging.info("Connecting to LDlite database...")
         try:
             self.connection = postgres.connect(f'dbname={os.getenv("dbname")} user={os.getenv("user")} password={os.getenv("password")} host={os.getenv("host")} port={os.getenv("port")}')
-            self.cursor = postgres.ClientCursor(self.connection)
+            self.cursor = self.connection.cursor()
         except Exception as e:
             PopupWindow(e)
             raise e
         logging.info("LDlite database connection established!")
-
-    def disconnect(self):
-        logging.info("Closing database connection...")
-        self.cursor.close()
         
     def rollbackTransaction(self):
         try:
@@ -56,45 +50,34 @@ class Querier:
             paramlist[i] = item
         return paramlist
 
-    def runQuery(self, script:str, param_list: list[ParameterValue], param_def: list[ParameterDefinition]):
+    def runQuery(self, script:str, param_list: list[dict]):
         self.connect()
         if self.query_name == '':
             logging.warning("Query name must not be empty")
             PopupWindow("Query name must not be empty")
-        param_def = sorted(param_def)
-        paramDict = {}
         for param in param_list:
-            if param_def[param.index].defined_type == ParameterType.File:
-                file = open(param.value, 'r')
-                filereader = csv.reader(file)
-                try:
-                    lines = []
-                    for line in filereader:
-                            lines.append(line[0].strip())
-                except Exception as e:
-                    PopupWindow(e)
-                    raise e
-                paramDict[param_def[param.index].arg_name] = lines
+            try:
+                paramName = '{' + param['originalname'] + '}'
+            except:
+                paramName = '{' + param['label'].cget('text') + '}'
+            logging.info(paramName)
+
+            if type(param['entry']) == tk.Button:
+                paramValue = str(param['value'])
             else:
-                paramDict[param_def[param.index].arg_name] = param.value
-        logging.info("Splitting up commands...")
-
-        commands = [x.strip() for x in script.split(';')]
-        try:
-            commands.remove("")
-        except:
-            pass
-
-        logging.info("Script broken into %s commands", len(commands))
-
-        for i, command in enumerate(commands):
-            logging.info("Executting command %s", i)
-            mergedCommand = self.cursor.mogrify(command, paramDict)
-            self.cursor.execute(mergedCommand)
-            logging.info("Command executed sucessfully.")
+                try:
+                    paramValue = str(param['entry'].get().strftime('YYYY-MM-DD'))
+                except:
+                    paramValue = str(param['entry'].get())
+            logging.info(paramValue)
+            script = script.replace(paramName, paramValue)
+        #try:
+        logging.info("Excecuting Query...")
+        self.cursor.execute(script)
         
-        logging.info("Query Excecuted Successfully.")
-        self.disconnect()
+        #except Exception as e:
+         #   raise e
+        logging.info("Query Excecuted Successfully.\n")
         return 0
 
     def saveResults(self, outfile_name: str):
@@ -153,7 +136,6 @@ class ActionMenu:
         self.script = ""
 
         self.act_menu = tk.Tk()
-        self.act_menu.attributes("-topmost", True)
         self.act_menu.configure(background="lavender")
         sv_ttk.set_theme("light")
 
@@ -237,7 +219,7 @@ class ActionMenu:
         self.querier.query_name = self.config_input_options.get()
         self.script = self.script_files.read_script_file(self.querier.query_name)
         try:
-            params = parameterized_scripts.get_parameters(self.script)
+            params = self.querier.parseParameters(self.script)
         except Exception as e:
             logging.warning(e.with_traceback)
             winsound.MessageBeep()
@@ -248,87 +230,77 @@ class ActionMenu:
         if params != []:
             self.param_header.pack(pady=5)
             self.param_active = True
-        for param in params:
-            logging.info(f"Creating Query Parameter Labels and Entries for parameter {param.index}: {param.description}")
-            if param.defined_type == ParameterType.Text:
-                label = ttk.Label(master=self.act_menu, text=param.description, font='TkDefaultFont 10 bold')
+        for i, param in enumerate(params):
+            splitParam = param.split("|")
+            if len(splitParam) == 1:
+                label = ttk.Label(master=self.act_menu, text=param, font='TkDefaultFont 10')
                 label.configure(background="lavender")
                 entry = ttk.Entry(master=self.act_menu, font='TkDefaultFont 10', width=41)
-                if param.default is not None:
-                    entry.insert(0, param.default)
-                self.param_objects.append({"label": label,"entry": entry, "value":param.default, "definition": param})
-
-            elif param.defined_type == ParameterType.Date:
-                label = ttk.Label(master=self.act_menu, text=param.description, font='TkDefaultFont 10 bold')
-                label.configure(background="lavender")
-                entry = DateEntry(master=self.act_menu, width=45, date_pattern="YYYY-MM-DD")
-                if param.default is not None:
-                    entry.set_date(param.default)
-                self.param_objects.append({"label": label, "entry": entry, "value":param.default, "definition":param})
-
-            elif param.defined_type == ParameterType.File:
-                label = ttk.Label(master=self.act_menu, text=param.description, font='TkDefaultFont 10 bold')
-                label.configure(background="lavender")
-                index = param.index
-                entry = tk.Button(master=self.act_menu, text="Select File", command= lambda: self.file_select(index), font='TkDefaultFont 10 bold', width=30)
-                self.param_objects.append({"label": label, "entry": entry, "value":param.default, "definition": param})
-
-            elif param.defined_type == ParameterType.Dropdown:
-                label = ttk.Label(master=self.act_menu, text=param.description, font='TkDefaultFont 10 bold')
-                label.configure(background="lavender")
-                entry = ttk.Combobox(self.act_menu, values=param.selectable_values, width=45, height=4)
-                if param.default is not None:
-                    entry.set(param.default)
-                self.param_objects.append({"label": label,"entry": entry, "value":param.default, "definition": param})
-
-            self.param_objects[param.index]["label"].pack(side='top')
-            self.param_objects[param.index]["entry"].pack(side='top',pady=5)
+                self.param_objects.append({"label": label,"entry": entry, "value":None})
+            elif len(splitParam) > 1:
+                logging.info(f"Creating Query Parameter Labels and Entries for parameter {i+1}: {splitParam}")
+                if splitParam[1] == "DATE":
+                    label = ttk.Label(master=self.act_menu, text=splitParam[0], font='TkDefaultFont 10 bold')
+                    label.configure(background="lavender")
+                    entry = DateEntry(master=self.act_menu, width=45, date_pattern="YYYY-MM-DD")
+                    self.param_objects.append({"label": label, "entry": entry, "originalname":param, "value":None})
+                elif splitParam[1] == "SINGLE_COLUMN_CSV_NO_HEADER":
+                    label = ttk.Label(master=self.act_menu, text=splitParam[0], font='TkDefaultFont 10')
+                    label.configure(background="lavender")
+                    param_index = i
+                    entry = tk.Button(master=self.act_menu, text="Select File", command= lambda: self.file_select(param_index), font='TkDefaultFont 10', width=30)
+                    self.param_objects.append({"label": label, "entry": entry, "originalname":param, "value":None})
+                else:
+                    label = ttk.Label(master=self.act_menu, text=splitParam[0], font='TkDefaultFont 10')
+                    label.configure(background="lavender")
+                    entry = ttk.Combobox(self.act_menu, value=splitParam[1:], width=45, height=4)
+                    self.param_objects.append({"label": label,"entry": entry, "originalname":param, "value":None})
+            self.param_objects[i]["label"].pack(side='top')
+            self.param_objects[i]["entry"].pack(side='top',pady=5)
 
     # Allows the user to select a file when a query uses the "SINGLE_COLUMN_CSV_NO_HEADER" parameter option
     # Param index identifies which parameter is being entered
     def file_select(self, param_index):
         
-        logging.info("Opening file Select dialogue for parameter %s", param_index)
+        logging.info(f"Opening file Select dialogue for parameter {param_index+1}")
         filename = tk.filedialog.askopenfilename()
         if not filename:
             logging.warning("Selected file not found.")
             PopupWindow("Selected file not found.")
             return
-        
+        file = open(filename, 'r')
+        filereader = csv.reader(file)
+        try:
+            lines = []
+            for line in filereader:
+                    lines.append(line[0].strip())
+        except Exception as e:
+            PopupWindow(e)
+            raise e
         self.param_objects[param_index]["entry"].config(text = filename[filename.rfind('/')+1:])
-        self.param_objects[param_index]['value'] = filename
+        self.param_objects[param_index]['value'] = "'" + "', '".join(lines) + "'"
         self.param_objects[param_index]["label"].update_idletasks()
 
         self.run.config(state="normal")
-        logging.info("File selected")
         
     # Tells the querier to execute the query. Triggers the save function
     def run_query(self):
-        paramValues = []
-        paramDefinitions = []
         for param in self.param_objects:
-            if isinstance(param['entry'], tk.Button):
-                paramValues.append(ParameterValue(index=param['definition'].index, description=param['definition'].description, value=str(param['value'])))
+            if type(param['entry']) == tk.Button:
+                if param['value'] == None:
+                    winsound.MessageBeep()
+                    logging.warning('Parameters must not be empty')
+                    PopupWindow('Parameters must not be empty.')
             else:
-                paramValues.append(ParameterValue(index=param['definition'].index, description=param['definition'].description, value=param['entry'].get()))
-            paramDefinitions.append(param['definition'])
-
-        logging.info("Parameter values: %s", paramValues)
-        paramValidation = parameterized_scripts.validate_parameters(self.script, paramValues)
-        popupMessage = 'Parameter Validation Errors:\n'
-        if len(paramValidation) > 0:
-            for validation in paramValidation:
-                popupMessage += "\n"
-                for param in self.param_objects:
-                    if validation.index == param["definition"].index:
-                        popupMessage += f"{param['definition'].description} -- {validation.message}"
-            popupMessage += "\n"
-            logging.warning(paramValidation)
-            PopupWindow(popupMessage)
-
+                if param['entry'].get() == '':
+                    winsound.MessageBeep()
+                    logging.warning('Parameters must not be empty')
+                    PopupWindow('Parameters must not be empty.')
+        
         file = self.file_prompt.get()
+        
         try:
-            self.querier.runQuery(self.script, paramValues, paramDefinitions)
+            self.querier.runQuery(self.script, self.param_objects)
             self.querier.saveResults(file)
         except Exception as e:
             logging.warning(e.with_traceback)
