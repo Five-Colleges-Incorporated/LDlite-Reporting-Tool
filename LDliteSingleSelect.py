@@ -32,11 +32,15 @@ class Querier:
         logging.info("Connecting to LDlite database...")
         try:
             self.connection = postgres.connect(f'dbname={os.getenv("dbname")} user={os.getenv("user")} password={os.getenv("password")} host={os.getenv("host")} port={os.getenv("port")}')
-            self.cursor = self.connection.cursor()
+            self.cursor = postgres.ClientCursor(self.connection)
         except Exception as e:
             PopupWindow(e)
             raise e
         logging.info("LDlite database connection established!")
+
+    def disconnect(self):
+        logging.info("Closing database connection...")
+        self.cursor.close()
         
     def rollbackTransaction(self):
         try:
@@ -70,13 +74,27 @@ class Querier:
                 except Exception as e:
                     PopupWindow(e)
                     raise e
-                paramDict[param_def[param.index].arg_name] = lines #TODO Something is wrong with the way that the list of strings is being inserted into the sql statement.
+                paramDict[param_def[param.index].arg_name] = lines
             else:
                 paramDict[param_def[param.index].arg_name] = param.value
-        logging.info("Excecuting Query...")
-        self.cursor.execute(script, paramDict)
+        logging.info("Splitting up commands...")
+
+        commands = [x.strip() for x in script.split(';')]
+        try:
+            commands.remove("")
+        except:
+            pass
+
+        logging.info("Script broken into %s commands", len(commands))
+
+        for i, command in enumerate(commands):
+            logging.info("Executting command %s", i)
+            mergedCommand = self.cursor.mogrify(command, paramDict)
+            self.cursor.execute(mergedCommand)
+            logging.info("Command executed sucessfully.")
         
-        logging.info("Query Excecuted Successfully.\n")
+        logging.info("Query Excecuted Successfully.")
+        self.disconnect()
         return 0
 
     def saveResults(self, outfile_name: str):
@@ -135,6 +153,7 @@ class ActionMenu:
         self.script = ""
 
         self.act_menu = tk.Tk()
+        self.act_menu.attributes("-topmost", True)
         self.act_menu.configure(background="lavender")
         sv_ttk.set_theme("light")
 
@@ -226,14 +245,13 @@ class ActionMenu:
         self.file_prompt.delete(0,len(self.file_prompt.get()))
         today = datetime.today()
         self.file_prompt.insert(0, f'{self.querier.query_name[:-4]}--{today.day}-{today.month}-{today.year}--{today.hour}-{today.minute}-{today.second}.tsv')
-        print(params)
         if params != []:
             self.param_header.pack(pady=5)
             self.param_active = True
         for param in params:
             logging.info(f"Creating Query Parameter Labels and Entries for parameter {param.index}: {param.description}")
             if param.defined_type == ParameterType.Text:
-                label = ttk.Label(master=self.act_menu, text=param.description, font='TkDefaultFont 10')
+                label = ttk.Label(master=self.act_menu, text=param.description, font='TkDefaultFont 10 bold')
                 label.configure(background="lavender")
                 entry = ttk.Entry(master=self.act_menu, font='TkDefaultFont 10', width=41)
                 if param.default is not None:
@@ -249,13 +267,14 @@ class ActionMenu:
                 self.param_objects.append({"label": label, "entry": entry, "value":param.default, "definition":param})
 
             elif param.defined_type == ParameterType.File:
-                label = ttk.Label(master=self.act_menu, text=param.description, font='TkDefaultFont 10')
+                label = ttk.Label(master=self.act_menu, text=param.description, font='TkDefaultFont 10 bold')
                 label.configure(background="lavender")
-                entry = tk.Button(master=self.act_menu, text="Select File", command= lambda: self.file_select(param.index), font='TkDefaultFont 10', width=30)
+                index = param.index
+                entry = tk.Button(master=self.act_menu, text="Select File", command= lambda: self.file_select(index), font='TkDefaultFont 10 bold', width=30)
                 self.param_objects.append({"label": label, "entry": entry, "value":param.default, "definition": param})
 
             elif param.defined_type == ParameterType.Dropdown:
-                label = ttk.Label(master=self.act_menu, text=param.description, font='TkDefaultFont 10')
+                label = ttk.Label(master=self.act_menu, text=param.description, font='TkDefaultFont 10 bold')
                 label.configure(background="lavender")
                 entry = ttk.Combobox(self.act_menu, values=param.selectable_values, width=45, height=4)
                 if param.default is not None:
@@ -269,7 +288,7 @@ class ActionMenu:
     # Param index identifies which parameter is being entered
     def file_select(self, param_index):
         
-        logging.info("Opening file Select dialogue for parameter %s", param_index+1)
+        logging.info("Opening file Select dialogue for parameter %s", param_index)
         filename = tk.filedialog.askopenfilename()
         if not filename:
             logging.warning("Selected file not found.")
@@ -281,6 +300,7 @@ class ActionMenu:
         self.param_objects[param_index]["label"].update_idletasks()
 
         self.run.config(state="normal")
+        logging.info("File selected")
         
     # Tells the querier to execute the query. Triggers the save function
     def run_query(self):
@@ -297,15 +317,16 @@ class ActionMenu:
         paramValidation = parameterized_scripts.validate_parameters(self.script, paramValues)
         popupMessage = 'Parameter Validation Errors:\n'
         if len(paramValidation) > 0:
-            for i, param in enumerate(self.param_objects):
-                for message in paramValidation:
-                    if paramValidation.index == i:
-                        popupMessage += f"{param['definition'].description}: {message}\n"
+            for validation in paramValidation:
+                popupMessage += "\n"
+                for param in self.param_objects:
+                    if validation.index == param["definition"].index:
+                        popupMessage += f"{param['definition'].description} -- {validation.message}"
+            popupMessage += "\n"
             logging.warning(paramValidation)
             PopupWindow(popupMessage)
 
         file = self.file_prompt.get()
-        self.querier.runQuery(self.script, paramValues, paramDefinitions) #TODO: REMOVE ME
         try:
             self.querier.runQuery(self.script, paramValues, paramDefinitions)
             self.querier.saveResults(file)

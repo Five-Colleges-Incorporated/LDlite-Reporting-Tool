@@ -64,7 +64,7 @@ def get_parameters(script_text: str) -> list[ParameterDefinition]:
             selectable_values = paramSplit[2:]
             default = paramSplit[2]
         else:
-            raise ValueError(f"Unknown parameter type {paramSplit[1]}.") #TODO Unknown parameter type error
+            raise ValueError(f"Unknown parameter type {paramSplit[1]}.")
         description = paramSplit[0]
         parsedParams.append(ParameterDefinition(arg_name=paramString, index=index, defined_type=defined_type, 
                                                 description=description, selectable_values=selectable_values, default=default))
@@ -104,8 +104,6 @@ def validate_parameters(script_text: str, parameters: list[ParameterValue]) -> l
                     validation.append(ParameterValidationError(message="Parameter must not be empty", index=parameter.index))
             else:
                 validation.append(ParameterValidationError(message="Parameter value must be a string", index=parameter.index))
-        else:
-            ... #TODO Parameter Type undefined error
     return validation
     
 def prepare_sql(script_text: str, parameters: list[ParameterValue]) -> tuple[str, tuple[any, ...]]:
