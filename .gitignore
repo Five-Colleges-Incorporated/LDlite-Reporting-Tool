@@ -8,3 +8,4 @@ Logs
 LDliteSingleSelect.zip
 LDliteSingleSelect.exe
 .env
+__pycache__
