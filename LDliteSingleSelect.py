@@ -34,6 +34,7 @@ class Querier:
             self.connection = postgres.connect(f'dbname={os.getenv("dbname")} user={os.getenv("user")} password={os.getenv("password")} host={os.getenv("host")} port={os.getenv("port")}')
             self.cursor = postgres.ClientCursor(self.connection)
         except Exception as e:
+            logging.warning(e.with_traceback)
             PopupWindow(e)
             raise e
         logging.info("LDlite database connection established!")
@@ -56,45 +57,22 @@ class Querier:
             paramlist[i] = item
         return paramlist
 
-    def runQuery(self, script:str, param_list: list[ParameterValue], param_def: list[ParameterDefinition]):
+    def runQuery(self, script:str, param_list: list[ParameterValue], param_defs: list[ParameterDefinition]):
         self.connect()
         if self.query_name == '':
             logging.warning("Query name must not be empty")
             PopupWindow("Query name must not be empty")
-        param_def = sorted(param_def)
-        paramDict = {}
-        for param in param_list:
-            if param_def[param.index].defined_type == ParameterType.File:
-                file = open(param.value, 'r')
-                filereader = csv.reader(file)
-                try:
-                    lines = []
-                    for line in filereader:
-                            lines.append(line[0].strip())
-                except Exception as e:
-                    PopupWindow(e)
-                    raise e
-                paramDict[param_def[param.index].arg_name] = lines
-            else:
-                paramDict[param_def[param.index].arg_name] = param.value
-        logging.info("Splitting up commands...")
-
-        commands = [x.strip() for x in script.split(';')]
-        try:
-            commands.remove("")
-        except:
-            pass
+        
+        commands, param_dict = parameterized_scripts.prepare_sql(script_text=script, param_vals=param_list, param_defs=param_defs)
 
         logging.info("Script broken into %s commands", len(commands))
 
         for i, command in enumerate(commands):
             logging.info("Executting command %s", i)
-            mergedCommand = self.cursor.mogrify(command, paramDict)
-            self.cursor.execute(mergedCommand)
+            self.cursor.execute(command, param_dict)
             logging.info("Command executed sucessfully.")
         
         logging.info("Query Excecuted Successfully.")
-        self.disconnect()
         return 0
 
     def saveResults(self, outfile_name: str):
@@ -330,6 +308,7 @@ class ActionMenu:
         try:
             self.querier.runQuery(self.script, paramValues, paramDefinitions)
             self.querier.saveResults(file)
+            self.querier.disconnect()
         except Exception as e:
             logging.warning(e.with_traceback)
             self.querier.rollbackTransaction()
