@@ -21,85 +21,8 @@ import logging
 from adapters.script_files import ScriptFiles
 import parameterized_scripts
 from parameterized_scripts import ParameterType, ParameterDefinition, ParameterValue, ParameterValidationError
-
-# Object for executing queries
-class Querier:
-    def __init__(self):
-        self.query_name = ''
-        logging.info("Querier Initialized Successfully.")
-
-    def connect(self):
-        logging.info("Connecting to LDlite database...")
-        try:
-            self.connection = postgres.connect(f'dbname={os.getenv("dbname")} user={os.getenv("user")} password={os.getenv("password")} host={os.getenv("host")} port={os.getenv("port")}')
-            self.cursor = postgres.ClientCursor(self.connection)
-        except Exception as e:
-            logging.warning(e.with_traceback)
-            PopupWindow(e)
-            raise e
-        logging.info("LDlite database connection established!")
-
-    def disconnect(self):
-        logging.info("Closing database connection...")
-        self.cursor.close()
-        
-    def rollbackTransaction(self):
-        try:
-            self.cursor.execute('ROLLBACK')
-        except Exception as e:
-            raise e
-
-    def parseParameters(self, script:str) -> list[str]:
-        logging.info(f"Parsing parameters...")
-        paramlist = re.findall('\{.*?\}', script)
-        for i, item in enumerate(paramlist):
-            item = item [1:-1]
-            paramlist[i] = item
-        return paramlist
-
-    def runQuery(self, script:str, param_list: list[ParameterValue], param_defs: list[ParameterDefinition]):
-        self.connect()
-        if self.query_name == '':
-            logging.warning("Query name must not be empty")
-            PopupWindow("Query name must not be empty")
-        
-        commands, param_dict = parameterized_scripts.prepare_sql(script_text=script, param_vals=param_list, param_defs=param_defs)
-
-        logging.info("Script broken into %s commands", len(commands))
-
-        for i, command in enumerate(commands):
-            logging.info("Executting command %s", i)
-            self.cursor.execute(command, param_dict)
-            logging.info("Command executed sucessfully.")
-        
-        logging.info("Query Excecuted Successfully.")
-        return 0
-
-    def saveResults(self, outfile_name: str):
-        logging.info("Saving Query Results...")
-        if outfile_name.find('.') == -1:
-            outpath = f"{os.getenv('output_filepath')}/{outfile_name}.tsv"
-        else:
-            outpath = f"{os.getenv('output_filepath')}/{outfile_name}"
-
-        try:
-            with open(outpath, 'w', encoding="utf-8") as out:
-                for i, column in enumerate(self.cursor.description):
-                    out.write(column[0])
-                    if i != len(self.cursor.description)-1:
-                        out.write('\t')
-                out.write('\n')
-                for line in self.cursor.fetchall(): 
-                    newline = ""
-                    for item in line:
-                        if newline != "":
-                            newline += "\t"
-                        newline += str(item)
-                    out.write((newline+'\n').replace('\'', ''))
-        except Exception as e:
-            raise e
-        logging.info(f"Query Results Saved Sucessfully as \"{outfile_name}.\"\n")
-
+from adapters.postgres import PostgresDB
+from adapters.output_file import LocalOutputFile
 
 # Popup Windows to give alert notices
 class PopupWindow:
@@ -123,12 +46,10 @@ class PopupWindow:
 # Includes buttons to open the query display and to run the query
 
 class ActionMenu:
-    def __init__(self, querier, script_files):
+    def __init__(self):
         logging.info("Initializing Action Menu...")
 
-        self.querier = querier
-        self.script_files = script_files
-        self.script = ""
+        self.script_files = ScriptFiles(os.getenv("query_filepath"))
 
         self.act_menu = tk.Tk()
         self.act_menu.attributes("-topmost", True)
@@ -152,6 +73,10 @@ class ActionMenu:
 
         # Query Select Dropdown
         options = self.script_files.list_script_files()
+        if len(options) == 0:
+            PopupWindow("Queries directory contains no .sql files")
+            raise FileNotFoundError("Queries directory contains no .sql files")
+
         self.config_input_options = ttk.Combobox(self.act_menu, value=options, width=45)
         self.config_input_options.bind("<<ComboboxSelected>>", self.querySelected)
         #self.config_input_options.grid(row=1, column=1, columnspan=2)
@@ -165,10 +90,9 @@ class ActionMenu:
 
         # Output File Name Field
         # Defaults to the name of the query file
-        self.file_prompt = ttk.Entry(master=self.act_menu, font='TkDefaultFont 10', width=41)
-        self.file_prompt.insert(0, querier.query_name)
+        self.output_file_prompt = ttk.Entry(master=self.act_menu, font='TkDefaultFont 10', width=41)
         #self.file_prompt.grid(row=3, column=1, columnspan=2)
-        self.file_prompt.pack(side='top', fill='x', padx=15, pady=5)
+        self.output_file_prompt.pack(side='top', fill='x', padx=15, pady=5)
 
         # Run Query Button
         self.run = tk.Button(master=self.act_menu, text="Run Query", command=self.run_query, font='TkDefaultFont 10 bold')
@@ -212,17 +136,17 @@ class ActionMenu:
             PopupWindow(e)        
         self.param_objects.clear()
 
-        self.querier.query_name = self.config_input_options.get()
-        self.script = self.script_files.read_script_file(self.querier.query_name)
+        query_name = self.config_input_options.get()
+        selected_script_text = self.script_files.read_script_file(query_name)
         try:
-            params = parameterized_scripts.get_parameters(self.script)
+            params = parameterized_scripts.get_parameters(selected_script_text)
         except Exception as e:
             logging.warning(e.with_traceback)
             winsound.MessageBeep()
             PopupWindow(e)
-        self.file_prompt.delete(0,len(self.file_prompt.get()))
+        self.output_file_prompt.delete(0,len(self.output_file_prompt.get()))
         today = datetime.today()
-        self.file_prompt.insert(0, f'{self.querier.query_name[:-4]}--{today.day}-{today.month}-{today.year}--{today.hour}-{today.minute}-{today.second}.tsv')
+        self.output_file_prompt.insert(0, f'{query_name[:-4]}--{today.day}-{today.month}-{today.year}--{today.hour}-{today.minute}-{today.second}.tsv')
         if params != []:
             self.param_header.pack(pady=5)
             self.param_active = True
@@ -284,6 +208,8 @@ class ActionMenu:
     def run_query(self):
         paramValues = []
         paramDefinitions = []
+        file = self.config_input_options.get()
+        script = self.script_files.read_script_file(file)
         for param in self.param_objects:
             if isinstance(param['entry'], tk.Button):
                 paramValues.append(ParameterValue(index=param['definition'].index, description=param['definition'].description, value=str(param['value'])))
@@ -292,7 +218,7 @@ class ActionMenu:
             paramDefinitions.append(param['definition'])
 
         logging.info("Parameter values: %s", paramValues)
-        paramValidation = parameterized_scripts.validate_parameters(self.script, paramValues)
+        paramValidation = parameterized_scripts.validate_parameters(script, paramValues)
         popupMessage = 'Parameter Validation Errors:\n'
         if len(paramValidation) > 0:
             for validation in paramValidation:
@@ -304,20 +230,18 @@ class ActionMenu:
             logging.warning(paramValidation)
             PopupWindow(popupMessage)
 
-        file = self.file_prompt.get()
+        file_out = LocalOutputFile(out_file_directory=os.getenv("output_filepath"), out_file_name=self.output_file_prompt.get())
         try:
-            self.querier.runQuery(self.script, paramValues, paramDefinitions)
-            self.querier.saveResults(file)
-            self.querier.disconnect()
+            db = PostgresDB(dbname=os.getenv("dbname"), user=os.getenv("user"), password=os.getenv("password"), host=os.getenv("host"), port=os.getenv("port"))
+            with db.stream_query(script=script, param_vals=paramValues, param_defs=paramDefinitions) as results:
+                file_out.write(results)
         except Exception as e:
             logging.warning(e.with_traceback)
-            self.querier.rollbackTransaction()
-            winsound.MessageBeep()
             PopupWindow(e)
             return
         winsound.MessageBeep()
-        logging.info(f"Query Results Saved as:\n\n{file}")
-        PopupWindow(f"Query Results Saved as:\n\n{file}")
+        logging.info(f"Query Results Saved as:\n\n{file_out.out_file_name}")
+        PopupWindow(f"Query Results Saved as:\n\n{file_out.out_file_name}")
 
 def launch():
     try:
@@ -338,16 +262,7 @@ def launch():
         PopupWindow(e)
         return
 
-    try:
-        querier = Querier()
-    except Exception as e:
-        logging.warning(e.with_traceback)
-        winsound.MessageBeep()
-        PopupWindow(e)
-        return
-    
-    script_files = ScriptFiles(os.path.abspath(os.getenv('query_filepath')))
-    ActionMenu(querier=querier, script_files=script_files)
+    ActionMenu()
 
 if __name__ == "__main__":
     dotenv.load_dotenv()

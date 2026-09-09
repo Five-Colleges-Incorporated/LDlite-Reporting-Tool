@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-
+from pathlib import Path
 
 class OutputFile:
-    def __init__(self, out_file_name: str): 
-        self.out_file_name = out_file_name
+    def __init__(self, out_file_name: str, out_file_directory: str): 
+        self.out_file_name = Path(out_file_directory) / out_file_name
 
     @abstractmethod
     def write(self, rows: memoryview) -> None: 
