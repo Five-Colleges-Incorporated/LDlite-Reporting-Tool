@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
+from collections.abc import Iterator, Buffer
 
 class OutputFile:
     def __init__(self, out_file_name: str, out_file_directory: str): 
@@ -10,7 +11,7 @@ class OutputFile:
         pass
 
 class LocalOutputFile(OutputFile): 
-    def write(self, rows:memoryview) -> None:
+    def write(self, rows:Iterator[Buffer]) -> None:
         with open(self.out_file_name, 'wb') as outfile:
             for row in rows:
                 outfile.write(row)

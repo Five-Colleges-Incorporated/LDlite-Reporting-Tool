@@ -22,10 +22,7 @@ class PostgresDB:
         logging.info("Setup commands executed successfully")
         
         logging.info("Streaming results of query command")
-        if commands[-1].strip()[-1] == ";":
-            command = commands[-1].strip()[:-1]
-        else:
-            command = commands[-1].strip()
+        command = commands[-1].strip(";").strip()
 
         with postgres.ClientCursor(self._conn) as cur, cur.copy(f"COPY ({command}) TO STDOUT WITH (FORMAT CSV, HEADER, DELIMITER '\t');", param_dict) as results:
             yield results
