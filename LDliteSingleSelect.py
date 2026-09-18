@@ -5,7 +5,6 @@ the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version. See the file "[COPYING](COPYING)" for more details.
 """
 from tkcalendar import DateEntry
-import psycopg as postgres
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
@@ -15,14 +14,13 @@ import os
 from datetime import datetime
 import re
 import winsound
-import csv
 import dotenv
 import logging
-from adapters.script_files import ScriptFiles
-import parameterized_scripts
-from parameterized_scripts import ParameterType, ParameterDefinition, ParameterValue, ParameterValidationError
-from adapters.postgres import PostgresDB
+from handlers import Handlers
+from parameterized_scripts import ParameterType, ParameterValue
 from adapters.output_file import LocalOutputFile
+from adapters.script_files import ScriptFiles
+from adapters.postgres import PostgresDB
 
 # Popup Windows to give alert notices
 class PopupWindow:
@@ -46,16 +44,16 @@ class PopupWindow:
 # Includes buttons to open the query display and to run the query
 
 class ActionMenu:
-    def __init__(self):
+    def __init__(self, handlers: Handlers):
         logging.info("Initializing Action Menu...")
 
-        self.script_files = ScriptFiles(os.getenv("query_filepath"))
+        self.handlers = handlers
 
+        # Root
         self.act_menu = tk.Tk()
         self.act_menu.attributes("-topmost", True)
         self.act_menu.configure(background="lavender")
         sv_ttk.set_theme("light")
-
         self.act_menu.wm_title("LDPlite Querier - Actions Menu")
 
         # General Title
@@ -72,24 +70,22 @@ class ActionMenu:
         self.query_desc.pack(side='top')
 
         # Query Select Dropdown
-        options = self.script_files.list_script_files()
+        options = self.handlers.handle_page_load()
         if len(options) == 0:
             PopupWindow("Queries directory contains no .sql files")
             raise FileNotFoundError("Queries directory contains no .sql files")
-
         self.config_input_options = ttk.Combobox(self.act_menu, value=options, width=45)
         self.config_input_options.bind("<<ComboboxSelected>>", self.querySelected)
         #self.config_input_options.grid(row=1, column=1, columnspan=2)
         self.config_input_options.pack(fill='x', side='top', padx=15, pady=5)
 
-        # Output File Name Prompt
+        # Output File Name Label
         self.file_desc = ttk.Label(master=self.act_menu, text="Output File Name:", font='TkDefaultFont 10 bold')
         self.file_desc.configure(background="lavender")
         #self.file_desc.grid(row=3, column=0, columnspan=1)
         self.file_desc.pack(side='top')
 
         # Output File Name Field
-        # Defaults to the name of the query file
         self.output_file_prompt = ttk.Entry(master=self.act_menu, font='TkDefaultFont 10', width=41)
         #self.file_prompt.grid(row=3, column=1, columnspan=2)
         self.output_file_prompt.pack(side='top', fill='x', padx=15, pady=5)
@@ -122,7 +118,7 @@ class ActionMenu:
         
     # Loads the selected query. Updates menu to display the parameters for the query and auto-fills the output file name field.
     def querySelected(self, *args):
-        logging.info(f"Query \"{self.config_input_options.get()}\" selected.")
+        logging.info("Query \"%s\" selected.", self.config_input_options.get())
         if self.param_active:
             self.param_header.pack_forget()
             self.param_active = False
@@ -137,9 +133,9 @@ class ActionMenu:
         self.param_objects.clear()
 
         query_name = self.config_input_options.get()
-        selected_script_text = self.script_files.read_script_file(query_name)
+        
         try:
-            params = parameterized_scripts.get_parameters(selected_script_text)
+            params = self.handlers.handle_script_selected(query_name)
         except Exception as e:
             logging.warning(e.with_traceback)
             winsound.MessageBeep()
@@ -151,7 +147,7 @@ class ActionMenu:
             self.param_header.pack(pady=5)
             self.param_active = True
         for param in params:
-            logging.info(f"Creating Query Parameter Labels and Entries for parameter {param.index}: {param.description}")
+            logging.info("Creating Query Parameter Labels and Entries for parameter %s: %s", param.index, param.description)
             if param.defined_type == ParameterType.Text:
                 label = ttk.Label(master=self.act_menu, text=param.description, font='TkDefaultFont 10 bold')
                 label.configure(background="lavender")
@@ -206,63 +202,53 @@ class ActionMenu:
         
     # Tells the querier to execute the query. Triggers the save function
     def run_query(self):
-        paramValues = []
-        paramDefinitions = []
-        file = self.config_input_options.get()
-        script = self.script_files.read_script_file(file)
+        param_values = []
+        script_file = self.config_input_options.get()
+        output_file = self.output_file_prompt.get()
+        
         for param in self.param_objects:
             if isinstance(param['entry'], tk.Button):
-                paramValues.append(ParameterValue(index=param['definition'].index, description=param['definition'].description, value=str(param['value'])))
+                param_values.append(ParameterValue(index=param['definition'].index, description=param['definition'].description, value=str(param['value'])))
             else:
-                paramValues.append(ParameterValue(index=param['definition'].index, description=param['definition'].description, value=param['entry'].get()))
-            paramDefinitions.append(param['definition'])
-
-        logging.info("Parameter values: %s", paramValues)
-        paramValidation = parameterized_scripts.validate_parameters(script, paramValues)
-        popupMessage = 'Parameter Validation Errors:\n'
-        if len(paramValidation) > 0:
-            for validation in paramValidation:
-                popupMessage += "\n"
-                for param in self.param_objects:
-                    if validation.index == param["definition"].index:
-                        popupMessage += f"{param['definition'].description} -- {validation.message}"
-            popupMessage += "\n"
-            logging.warning(paramValidation)
-            PopupWindow(popupMessage)
-
-        file_out = LocalOutputFile(out_file_directory=os.getenv("output_filepath"), out_file_name=self.output_file_prompt.get())
+                param_values.append(ParameterValue(index=param['definition'].index, description=param['definition'].description, value=param['entry'].get()))
+        logging.info("Parameter values: %s", param_values)
         try:
-            db = PostgresDB(dbname=os.getenv("dbname"), user=os.getenv("user"), password=os.getenv("password"), host=os.getenv("host"), port=os.getenv("port"))
-            with db.stream_query(script=script, param_vals=paramValues, param_defs=paramDefinitions) as results:
-                file_out.write(results)
+            results = self.handlers.handle_script_submitted(outfile_name=output_file, script_name=script_file, values=param_values)
         except Exception as e:
             logging.warning(e.with_traceback)
             PopupWindow(e)
-            return
-        winsound.MessageBeep()
-        logging.info(f"Query Results Saved as:\n\n{file_out.out_file_name}")
-        PopupWindow(f"Query Results Saved as:\n\n{file_out.out_file_name}")
+
+        if isinstance(results,list):
+            logging.warning("Parameter validation encountered one or more errors.")
+            popupMessage = 'Parameter Validation Errors:\n'
+            for error in results:
+                popupMessage += "\n"
+                logging.warning(error.args[0])
+                popupMessage += error.args[0]
+            PopupWindow(popupMessage)
+        else:
+            logging.info("Query Results Saved as:\n\n%s", output_file)
+            PopupWindow(f"Query Results Saved as:\n\n{output_file}")
 
 def launch():
     try:
-        try:            
-            os.mkdir(os.getenv('query_filepath'))
-            logging.info(f"Directory for queries \"{os.getenv('query_filepath')}\" created\n")
-        except Exception as e:
-            logging.info("Existing query directory found\n")
-        try:
-            os.mkdir(os.getenv('output_filepath'))
-            logging.info(f"Directory for outputted files \"{os.getenv('output_filepath')}\" created\n")
-        except Exception as e:
-            logging.info("Existing output directory found\n")
+        os.mkdir(os.getenv('query_filepath'))
+        logging.info("Directory for queries \"%s\" created\n", os.getenv('query_filepath'))
+    except FileExistsError:
+        logging.info("Existing query directory found\n")
+    try:
+        os.mkdir(os.getenv('output_filepath'))
+        logging.info("Directory for outputted files \"%s\" created\n", os.getenv('output_filepath'))
+    except FileExistsError:
+        logging.info("Existing output directory found\n")
 
-    except Exception as e:
-        logging.warning(e.with_traceback)
-        winsound.MessageBeep()
-        PopupWindow(e)
-        return
+    outfile = LocalOutputFile(os.getenv("output_filepath"))
+    script_files = ScriptFiles(os.getenv("query_filepath"))
+    db = PostgresDB(dbname=os.getenv("dbname"), user=os.getenv("user"),
+                    password=os.getenv("password"), host=os.getenv("host"), port=os.getenv("port"))
+    handlers = Handlers(output_file_creator=outfile, script_files=script_files, db=db)
 
-    ActionMenu()
+    ActionMenu(handlers)
 
 if __name__ == "__main__":
     dotenv.load_dotenv()
@@ -270,11 +256,11 @@ if __name__ == "__main__":
     try:
         os.mkdir(os.getenv('log_file_output_filepath'))
         print(f"Directory for logs \"{os.getenv('log_file_output_filepath')}\" created")
-    except Exception as e:
+    except FileExistsError as e:
         print("Existing log directory found")
 
     start_time = datetime.now()
-    logFile = f'{os.getenv("log_file_output_filepath")}/LDlite Reporting - {start_time.year}-{start_time.month}-{start_time.day}--{start_time.hour}-{start_time.minute}-{start_time.second}.log'
+    logFile = f"{os.getenv('log_file_output_filepath')}/LDlite Reporting - {start_time.year}-{start_time.month}-{start_time.day}--{start_time.hour}-{start_time.minute}-{start_time.second}.log"
     logging.basicConfig(filename=logFile, encoding='utf-8', level=logging.DEBUG,
                     format='%(asctime)s | %(levelname)s | %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
     logging.info("Beginning Log")
