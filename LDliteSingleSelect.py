@@ -218,7 +218,7 @@ class ActionMenu:
             logging.warning(e.with_traceback)
             PopupWindow(e)
 
-        if isinstance(results,list):
+        if len(results)>0:
             logging.warning("Parameter validation encountered one or more errors.")
             popupMessage = 'Parameter Validation Errors:\n'
             for error in results:

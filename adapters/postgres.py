@@ -8,9 +8,6 @@ class PostgresDB:
     def __init__(self, dbname: str, user: str, password: str, host:str, port: str): 
         self._conn = postgres.connect(f'dbname={dbname} user={user} password={password} host={host} port={port}')
 
-    def rollback(self):
-        self._conn.rollback()
-    
     @contextmanager
     def stream_query(self, script: str, param_vals: list[ParameterValue], param_defs: list[ParameterDefinition]) -> memoryview:
         commands, param_dict = prepare_sql(script_text=script, param_vals=param_vals, param_defs=param_defs)
@@ -29,3 +26,4 @@ class PostgresDB:
 
         with postgres.ClientCursor(self._conn) as cur, cur.copy(f"COPY ({command}) TO STDOUT WITH (FORMAT CSV, HEADER, DELIMITER '\t');", param_dict) as results:
             yield results
+        self._conn.rollback()

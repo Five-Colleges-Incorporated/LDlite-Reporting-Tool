@@ -16,7 +16,7 @@ class Handlers:
         selected_script_text = self.script_files.read_script_file(script_name=script_name)
         return get_parameters(selected_script_text)
 
-    def handle_script_submitted(self, outfile_name: str, script_name: str, values: list[ParameterValue]) -> list[ValueError] | int:
+    def handle_script_submitted(self, outfile_name: str, script_name: str, values: list[ParameterValue]) -> list[ValueError]:
         script_text = self.script_files.read_script_file(script_name=script_name)
         param_definitions = get_parameters(script_text=script_text)
 
@@ -36,7 +36,5 @@ class Handlers:
                 self.output_file_creator.write(out_file_name=outfile_name, rows=results)
         except Exception as e:
             raise(e)
-        finally:
-            self.db.rollback()
-        return -1
+        return []
         
