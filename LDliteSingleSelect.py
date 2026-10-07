@@ -231,16 +231,8 @@ class ActionMenu:
             PopupWindow(f"Query Results Saved as:\n\n{output_file}")
 
 def launch():
-    try:
-        os.mkdir(os.getenv('query_filepath'))
-        logging.info("Directory for queries \"%s\" created\n", os.getenv('query_filepath'))
-    except FileExistsError:
-        logging.info("Existing query directory found\n")
-    try:
-        os.mkdir(os.getenv('output_filepath'))
-        logging.info("Directory for outputted files \"%s\" created\n", os.getenv('output_filepath'))
-    except FileExistsError:
-        logging.info("Existing output directory found\n")
+    os.makedirs(os.getenv('query_filepath'), exist_ok=True)
+    os.makedirs(os.getenv('output_filepath'), exist_ok=True)
 
     outfile = LocalOutputFile(os.getenv("output_filepath"))
     script_files = ScriptFiles(os.getenv("query_filepath"))
@@ -253,11 +245,7 @@ def launch():
 if __name__ == "__main__":
     dotenv.load_dotenv()
 
-    try:
-        os.mkdir(os.getenv('log_file_output_filepath'))
-        print(f"Directory for logs \"{os.getenv('log_file_output_filepath')}\" created")
-    except FileExistsError as e:
-        print("Existing log directory found")
+    os.makedirs(os.getenv('log_file_output_filepath'), exist_ok=True)
 
     start_time = datetime.now()
     logFile = f"{os.getenv('log_file_output_filepath')}/LDlite Reporting - {start_time.year}-{start_time.month}-{start_time.day}--{start_time.hour}-{start_time.minute}-{start_time.second}.log"
