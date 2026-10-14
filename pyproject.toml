@@ -7,7 +7,7 @@ authors = [
   { name = "Katherine Bargar", email = "kbargar@fivecolleges.edu" },
 ]
 dependencies = []
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.16"
 readme = "readme.md"
 license = { text = "GPL-3.0-only" }
 
@@ -53,13 +53,15 @@ mypy-init-return = true
 
 [tool.pdm.scripts]
 test-quick = "python -m pytest -vv -k 'not Integration' {args}"
+_testclean = { shell = "rm -f .coverage" }
 test.composite = [
-  { shell = "rm -f .coverage" },
+  "_testclean",
   "python -m coverage run -m pytest -vv {args}",
   "python -m coverage report",
 ]
+_lockclean = { shell = "rm -f pylock.toml" }
 lock.composite = [
-  { shell = "rm -f pylock.toml" },
+  "_lockclean",
   "pdm lock --python=3.11",
   "pdm lock --lockfile pylock.maximal.toml --python=3.15",
   "pdm lock --strategy direct_minimal_versions --lockfile pylock.minimal.toml --python=3.11",
@@ -68,9 +70,10 @@ test-install.composite = [
   "pdm sync --lockfile=pylock.minimal.toml",
   "pdm sync --lockfile=pylock.toml",
 ]
-build-exe.composite = [
+_buildclean = { shell = "rm -fdr exe_build" }
+build.composite = [
   "pyinstaller --onefile --windowed ./src/ldlite_reporting_tool/__init__.py -n LDliteSingleSelect --distpath {run_cwd} --workpath exe_build --noconfirm",
-  { shell = "rm -fdr exe_build" },
+  "_buildclean"
 ]
 
 
