@@ -3,17 +3,17 @@ name = "ldlite-reporting-tool"
 version = "0.0.1"
 description = "A small web application for running and scheduling fixed LDLite reports."
 authors = [
-    {name = "Amelia Sutton",email = "ameliasutton@umass.edu"},
-    {name = "Katherine Bargar",email = "kbargar@fivecolleges.edu"},
+  { name = "Amelia Sutton", email = "ameliasutton@umass.edu" },
+  { name = "Katherine Bargar", email = "kbargar@fivecolleges.edu" },
 ]
 dependencies = []
 requires-python = ">=3.11"
 readme = "readme.md"
-license = {text = "GPL-3.0-only"}
+license = { text = "GPL-3.0-only" }
 
 [project.urls]
 Homepage = "https://github.com/Five-Colleges-Incorporated/LDlite-Reporting-Tool"
-"Bug Tracker"= "https://github.com/Five-Colleges-Incorporated/LDlite-Reporting-Tool/issues"
+"Bug Tracker" = "https://github.com/Five-Colleges-Incorporated/LDlite-Reporting-Tool/issues"
 
 [build-system]
 requires = ["pdm-backend"]
@@ -53,21 +53,35 @@ mypy-init-return = true
 
 [tool.pdm.scripts]
 test-quick = "python -m pytest -vv -k 'not Integration' {args}"
-test.composite = ["rm -f .coverage", "python -m coverage run -m pytest -vv {args}", "python -m coverage report"]
-lock.composite = ["rm -f pylock.toml", "pdm lock --python=3.11", "pdm lock --lockfile pylock.maximal.toml --python=3.15", "pdm lock --strategy direct_minimal_versions --lockfile pylock.minimal.toml --python=3.11"]
-test-install.composite = ["pdm sync --lockfile=pylock.minimal.toml", "pdm sync --lockfile=pylock.toml"]
+test.composite = [
+  { shell = "rm -f .coverage" },
+  "python -m coverage run -m pytest -vv {args}",
+  "python -m coverage report",
+]
+lock.composite = [
+  { shell = "rm -f pylock.toml" },
+  "pdm lock --python=3.11",
+  "pdm lock --lockfile pylock.maximal.toml --python=3.15",
+  "pdm lock --strategy direct_minimal_versions --lockfile pylock.minimal.toml --python=3.11",
+]
+test-install.composite = [
+  "pdm sync --lockfile=pylock.minimal.toml",
+  "pdm sync --lockfile=pylock.toml",
+]
+build-exe.composite = [
+  "pyinstaller --onefile --windowed LDliteSingleSelect.py -n LDliteSingleSelect --distpath {run_cwd} --workpath exe_build --noconfirm",
+  { shell = "rm -fdr exe_build" },
+]
+
 
 [dependency-groups]
-lint = [
-    "ruff==0.17.0",
-    "ty==0.0.87",
-    "pre-commit-hooks==6.0.0",
-]
+dev = ["pyinstaller==6.22.3"]
+lint = ["ruff==0.17.0", "ty==0.0.87", "pre-commit-hooks==6.0.0"]
 test = [
-    # pytest-cases is only compatible with pytest<9.1 for the moment
-    # https://github.com/smarie/python-pytest-cases/issues/385
-    "pytest==9.0.3",
-    "pytest-cases==3.10.1",
-    "pytest-asyncio==1.4.0",
-    "coverage==7.16.2",
+  # pytest-cases is only compatible with pytest<9.1 for the moment
+  # https://github.com/smarie/python-pytest-cases/issues/385
+  "pytest==9.0.3",
+  "pytest-cases==3.10.1",
+  "pytest-asyncio==1.4.0",
+  "coverage==7.16.2",
 ]
