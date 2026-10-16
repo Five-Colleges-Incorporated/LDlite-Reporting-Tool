@@ -215,6 +215,84 @@ marker = "python_version >= \"3.15\" and \"lint\" in dependency_groups"
 dependencies = []
 
 [[packages]]
+name = "psycopg"
+version = "3.3.6"
+requires-python = ">=3.10"
+sdist = {name = "psycopg-3.3.6.tar.gz", url = "https://files.pythonhosted.org/packages/76/26/3ea4ca5eaea1c0debcdf7ee7c1613fbe721dc27a03c461c0817ffd8a0601/psycopg-3.3.6.tar.gz", hashes = {sha256 = "c081f2250df751a943036e42db6df4571c66cd0aabe8291a7a506512b12007d2"}}
+wheels = [
+    {name = "psycopg-3.3.6-py3-none-any.whl",url = "https://files.pythonhosted.org/packages/4e/de/748bd7609c71cae5d737f0ba9192f19329f70180ecda8fff3cac02c5abe3/psycopg-3.3.6-py3-none-any.whl",hashes = {sha256 = "a1db9f7148b06a28606767efaca51fa6f9398c5c0a3810519be69d7000bdb631"}},
+]
+marker = "\"default\" in dependency_groups and python_version >= \"3.15\" or \"dev\" in dependency_groups and python_version >= \"3.15\""
+
+[packages.tool.pdm]
+dependencies = [
+    "typing-extensions>=4.6; python_version < \"3.13\"",
+    "tzdata; sys_platform == \"win32\"",
+]
+
+[[packages]]
+name = "python-dotenv"
+version = "1.2.4"
+requires-python = ">=3.10"
+sdist = {name = "python_dotenv-1.2.4.tar.gz", url = "https://files.pythonhosted.org/packages/74/26/2fbeedb218a787a5eea551c7532cac4e009f83d689dd2faa0d0353473f86/python_dotenv-1.2.4.tar.gz", hashes = {sha256 = "f0d53e69935a851c0dcc78f3ab7aaccd8cabef0b92382b576b824212902873c0"}}
+wheels = [
+    {name = "python_dotenv-1.2.4-py3-none-any.whl",url = "https://files.pythonhosted.org/packages/60/d1/38f3a3405989a89ac18390803e70c6ad7c7760da4f9b83cbeca0c44a0c72/python_dotenv-1.2.4-py3-none-any.whl",hashes = {sha256 = "42269a8a5b3fd54ffa6f3d84b18abed50064717576b4ecf03dc4a55d8aa04fdc"}},
+]
+marker = "python_version >= \"3.15\" and \"default\" in dependency_groups"
+
+[packages.tool.pdm]
+dependencies = []
+
+[[packages]]
+name = "sv-ttk"
+version = "2.6.1"
+requires-python = ">=3.9"
+sdist = {name = "sv_ttk-2.6.1.tar.gz", url = "https://files.pythonhosted.org/packages/4e/ca/9625914e7a7e58ce9f0d8d6a5eb29975bab077ce58a36cf86f863d188cd3/sv_ttk-2.6.1.tar.gz", hashes = {sha256 = "47589d5e20398cf404e8362f24f3ed48f3830cd0ace056d83354fa25d8e4fe48"}}
+wheels = [
+    {name = "sv_ttk-2.6.1-py3-none-any.whl",url = "https://files.pythonhosted.org/packages/5b/36/32629d8bab9bccd54a36716a960ba1148fca4c1fd453370dba0b42d712ea/sv_ttk-2.6.1-py3-none-any.whl",hashes = {sha256 = "8ca5944f95431a911986b00c54e7f44608f3f811382cd985fd14bb3e65f95d97"}},
+]
+marker = "python_version >= \"3.15\" and \"default\" in dependency_groups"
+
+[packages.tool.pdm]
+dependencies = []
+
+[[packages]]
+name = "tkcalendar"
+version = "1.6.1"
+sdist = {name = "tkcalendar-1.6.1.tar.gz", url = "https://files.pythonhosted.org/packages/65/3d/3406cf7963661ed890082bff17ed4c5e26b5a564306639303d4fbb2a047f/tkcalendar-1.6.1.tar.gz", hashes = {sha256 = "5edf958c0a59429e90309e9b805b2e229192bbcab952460247204d7030eea5cf"}}
+wheels = [
+    {name = "tkcalendar-1.6.1-py3-none-any.whl",url = "https://files.pythonhosted.org/packages/e9/d4/9528ea6ecb5d4394f425df651957da6f6a715b41c5b12d43d41888c14394/tkcalendar-1.6.1-py3-none-any.whl",hashes = {sha256 = "9d3a80816a7b32d64fab696fa3d2a007fb23c87953267d5e343a38ff4cd7c15c"}},
+]
+marker = "python_version >= \"3.15\" and \"default\" in dependency_groups"
+
+[packages.tool.pdm]
+dependencies = [
+    "babel",
+]
+
+[[packages]]
+name = "psycopg-binary"
+version = "3.3.6"
+requires-python = ">=3.10"
+wheels = [
+    {name = "psycopg_binary-3.3.6-cp315-cp315-macosx_10_15_x86_64.whl",url = "https://files.pythonhosted.org/packages/0e/b1/a372b9c02aea50148e71c9853e19efca8fa5ae2010a8e27243b9b8f790c0/psycopg_binary-3.3.6-cp315-cp315-macosx_10_15_x86_64.whl",hashes = {sha256 = "bf8c8481d026b85dd70c5fa7dde85b2333aed0b32a2602bcd38a900cbd78a49c"}},
+    {name = "psycopg_binary-3.3.6-cp315-cp315-macosx_11_0_arm64.whl",url = "https://files.pythonhosted.org/packages/65/7c/811e3828c6b82e2f10c6c9cdd963cfc66f3e024026e5a69ac18530bad984/psycopg_binary-3.3.6-cp315-cp315-macosx_11_0_arm64.whl",hashes = {sha256 = "b599defe9190b17e9907c8b4d114c181e702c87efcd1b8a0ad40971cdcc4634a"}},
+    {name = "psycopg_binary-3.3.6-cp315-cp315-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl",url = "https://files.pythonhosted.org/packages/3e/15/9a784eed813ea9e97c294af3ead63d02b7b203502c66380336c50065e441/psycopg_binary-3.3.6-cp315-cp315-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl",hashes = {sha256 = "b8ece331509f7a975b90501f41e83ad905e4141753fedf3f2711b2bc70a8efbc"}},
+    {name = "psycopg_binary-3.3.6-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",url = "https://files.pythonhosted.org/packages/68/16/47194e002007c27337b11e49bf459c4b19727463f9aff2e1a90917bcc806/psycopg_binary-3.3.6-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",hashes = {sha256 = "c61617eaae0112ca154da87ffb99b73af2c74067acac28dfb9a4455b019dff2e"}},
+    {name = "psycopg_binary-3.3.6-cp315-cp315-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",url = "https://files.pythonhosted.org/packages/53/84/5dcf9f310b11f0675cd860c6b2c70f58ce61798a3ee3f6f962b53fa358ca/psycopg_binary-3.3.6-cp315-cp315-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",hashes = {sha256 = "c6d19cb4999d03231e8730a5f66c8f5068bc3b532677eb39dab0f600bff3e312"}},
+    {name = "psycopg_binary-3.3.6-cp315-cp315-manylinux_2_38_riscv64.manylinux_2_39_riscv64.whl",url = "https://files.pythonhosted.org/packages/f3/06/1957a06dc22963c418c27b284929579de84f29c37ad1abe6dc6ee9e8cf25/psycopg_binary-3.3.6-cp315-cp315-manylinux_2_38_riscv64.manylinux_2_39_riscv64.whl",hashes = {sha256 = "e8cbb54454dbf1bbf2ff08dd7693e8d94ac94b1a20f70f4b3b813d52ecb5cbc1"}},
+    {name = "psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_aarch64.whl",url = "https://files.pythonhosted.org/packages/21/43/ac07d042bae99b57bf123bb473632f29af544008094da0ffd285ab8011e2/psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_aarch64.whl",hashes = {sha256 = "dc75da5a20951049f7b773145f998f69d181adad9c58a0ff36e0cf1d73c10e10"}},
+    {name = "psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_ppc64le.whl",url = "https://files.pythonhosted.org/packages/aa/b1/019156fbeafcefb4cccc9d109de4699493bceb8313c7545c8349e089dfbc/psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_ppc64le.whl",hashes = {sha256 = "955e3dd94da361e052d2e49acf591017158dc8f8ed2c8a42c2e3943403c39dc2"}},
+    {name = "psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_riscv64.whl",url = "https://files.pythonhosted.org/packages/5d/0f/62113dc6b1df65983a1f2fc816c04b1edfa22f2ae9d4abee74ed267f4a96/psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_riscv64.whl",hashes = {sha256 = "c7753871eb57e6a5f4646f6168590c6653073dea5e9e720b201c8875332df4c8"}},
+    {name = "psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_x86_64.whl",url = "https://files.pythonhosted.org/packages/5d/d5/cf0cbd1ea5a7d8167fe2c6953efde19101f7b193bd61a23e6d622ad6854c/psycopg_binary-3.3.6-cp315-cp315-musllinux_1_2_x86_64.whl",hashes = {sha256 = "303732e798fe6729f8e12021b9c96107df8e95ecec4dd487c67b98ec2a59435e"}},
+    {name = "psycopg_binary-3.3.6-cp315-cp315-win_amd64.whl",url = "https://files.pythonhosted.org/packages/98/33/e2a5b36edf8aa422f6fa4b894756eb33dc93b36df5f65121280bb8b929c4/psycopg_binary-3.3.6-cp315-cp315-win_amd64.whl",hashes = {sha256 = "2f122603f36050937982abf9668d8bc4769a79f7c93a65013b1c49f1cab7b56b"}},
+]
+marker = "implementation_name != \"pypy\" and python_version >= \"3.15\" and \"dev\" in dependency_groups"
+
+[packages.tool.pdm]
+dependencies = []
+
+[[packages]]
 name = "packaging"
 version = "26.3"
 requires-python = ">=3.9"
@@ -388,6 +466,21 @@ marker = "python_version < \"3.16\" and python_version >= \"3.15\" and \"dev\" i
 dependencies = []
 
 [[packages]]
+name = "babel"
+version = "2.18.0"
+requires-python = ">=3.8"
+sdist = {name = "babel-2.18.0.tar.gz", url = "https://files.pythonhosted.org/packages/7d/b2/51899539b6ceeeb420d40ed3cd4b7a40519404f9baf3d4ac99dc413a834b/babel-2.18.0.tar.gz", hashes = {sha256 = "b80b99a14bd085fcacfa15c9165f651fbb3406e66cc603abf11c5750937c992d"}}
+wheels = [
+    {name = "babel-2.18.0-py3-none-any.whl",url = "https://files.pythonhosted.org/packages/77/f5/21d2de20e8b8b0408f0681956ca2c69f1320a3848ac50e6e7f39c6159675/babel-2.18.0-py3-none-any.whl",hashes = {sha256 = "e2b422b277c2b9a9630c1d7903c2a00d0830c409c59ac8cae9081c92f1aeba35"}},
+]
+marker = "python_version >= \"3.15\" and \"default\" in dependency_groups"
+
+[packages.tool.pdm]
+dependencies = [
+    "pytz>=2015.7; python_version < \"3.9\"",
+]
+
+[[packages]]
 name = "decopatch"
 version = "1.4.10"
 sdist = {name = "decopatch-1.4.10.tar.gz", url = "https://files.pythonhosted.org/packages/90/4c/8ca1f193428cbc4d63d0f07db9b8bd96be2db8ee5deefa93e7e8a28f2812/decopatch-1.4.10.tar.gz", hashes = {sha256 = "957f49c93f4150182c23f8fb51d13bb3213e0f17a79e09c8cca7057598b55720"}}
@@ -403,8 +496,21 @@ dependencies = [
     "enum34; python_version < \"3.4\"",
 ]
 
+[[packages]]
+name = "tzdata"
+version = "2026.5"
+requires-python = ">=2"
+sdist = {name = "tzdata-2026.5.tar.gz", url = "https://files.pythonhosted.org/packages/d9/68/f1b440335057bfce71b6e50a9d09445aa2ecbd08359a337976627b8409e7/tzdata-2026.5.tar.gz", hashes = {sha256 = "8cc73c0a0bfca7dbfa59235d60b2eff82231dee33f53d206db1acd9173cfc0a7"}}
+wheels = [
+    {name = "tzdata-2026.5-py2.py3-none-any.whl",url = "https://files.pythonhosted.org/packages/94/21/1e5995a1c920cce14e4bffae20c665ec10e7ed03ab25e006cd741092b718/tzdata-2026.5-py2.py3-none-any.whl",hashes = {sha256 = "b683bd1b6659ddcd810ff02ad09ba821d4bf1065072805063eb35c49617905ac"}},
+]
+marker = "sys_platform == \"win32\" and python_version >= \"3.15\" and \"default\" in dependency_groups or sys_platform == \"win32\" and python_version >= \"3.15\" and \"dev\" in dependency_groups"
+
+[packages.tool.pdm]
+dependencies = []
+
 [tool.pdm]
-hashes = {sha256 = "90c8c7136f091858291d85eae83a88a1428bf721ff6bb90da578ecf6bebdc2b3"}
+hashes = {sha256 = "e23a25c9218693497223371d6f2b464dc6948ea8e6d110125ebfaf6903e3430f"}
 strategy = ["inherit_metadata", "static_urls"]
 
 [[tool.pdm.targets]]

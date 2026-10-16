@@ -6,7 +6,12 @@ authors = [
   { name = "Amelia Sutton", email = "ameliasutton@umass.edu" },
   { name = "Katherine Bargar", email = "kbargar@fivecolleges.edu" },
 ]
-dependencies = []
+dependencies = [
+  "tkcalendar>=1.6",
+  "psycopg>=3",
+  "python-dotenv>=1.2",
+  "sv_ttk>=2.6",
+]
 requires-python = ">=3.11"
 readme = "readme.md"
 license = { text = "GPL-3.0-only" }
@@ -73,12 +78,12 @@ test-install.composite = [
 _buildclean = { shell = "rm -fdr exe_build" }
 build.composite = [
   "pyinstaller --onefile --windowed ./src/ldlite_reporting_tool/__init__.py -n LDliteSingleSelect --distpath {run_cwd} --workpath exe_build --noconfirm",
-  "_buildclean"
+  "_buildclean",
 ]
 
 
 [dependency-groups]
-dev = ["pyinstaller==6.22.3; python_version<'3.16'"]
+dev = ["pyinstaller==6.22.3; python_version<'3.16'", "psycopg[binary]"]
 lint = ["ruff==0.17.0", "ty==0.0.87", "pre-commit-hooks==6.0.0"]
 test = [
   # pytest-cases is only compatible with pytest<9.1 for the moment
