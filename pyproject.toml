@@ -7,7 +7,7 @@ authors = [
   { name = "Katherine Bargar", email = "kbargar@fivecolleges.edu" },
 ]
 dependencies = []
-requires-python = ">=3.11,<3.16"
+requires-python = ">=3.11"
 readme = "readme.md"
 license = { text = "GPL-3.0-only" }
 
@@ -78,7 +78,7 @@ build.composite = [
 
 
 [dependency-groups]
-dev = ["pyinstaller==6.22.3"]
+dev = ["pyinstaller==6.22.3; python_version<'3.16'"]
 lint = ["ruff==0.17.0", "ty==0.0.87", "pre-commit-hooks==6.0.0"]
 test = [
   # pytest-cases is only compatible with pytest<9.1 for the moment
