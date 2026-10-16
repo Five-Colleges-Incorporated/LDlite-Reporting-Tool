@@ -38,5 +38,5 @@ type = "lint"
 include = ["*.py"]
 invoke = "once"
 path_args = "none"
-cmd = ["ty", "check", "--quiet"]
+cmd = ["ty", "check"]
 ok_exit_codes = [0]
