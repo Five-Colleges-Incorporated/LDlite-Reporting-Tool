@@ -69,7 +69,7 @@ test-install.composite = [
   "pdm sync --lockfile=pylock.toml",
 ]
 build-exe.composite = [
-  "pyinstaller --onefile --windowed LDliteSingleSelect.py -n LDliteSingleSelect --distpath {run_cwd} --workpath exe_build --noconfirm",
+  "pyinstaller --onefile --windowed ./src/ldlite_reporting_tool/__init__.py -n LDliteSingleSelect --distpath {run_cwd} --workpath exe_build --noconfirm",
   { shell = "rm -fdr exe_build" },
 ]
 
