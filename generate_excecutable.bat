@@ -1,8 +1,4 @@
-pip install tk
-pip install psycopg2
-pip install datetime
-pip install pyinstaller
-pyinstaller --onefile --windowed LDliteSingleSelect.py -n LDliteSingleSelect --distpath "%cd%" --workpath exe_build --noconfirm
+pyinstaller --onefile --windowed ./src/ldlite_reporting_tool/LDliteSingleSelect.py -n LDliteSingleSelect --distpath "%cd%" --workpath exe_build --noconfirm
 del LDliteSingleSelect.spec
 rmdir /Q /S exe_build
 pause
