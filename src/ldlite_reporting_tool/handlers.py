@@ -1,7 +1,7 @@
-from adapters.output_file import OutputFile
-from adapters.postgres import PostgresDB
-from parameterized_scripts import ParameterDefinition, ParameterValue, get_parameters, validate_parameters
-from adapters.script_files import ScriptFiles
+from .adapters.output_file import OutputFile
+from .adapters.postgres import PostgresDB
+from .parameterized_scripts import ParameterDefinition, ParameterValue, get_parameters, validate_parameters
+from .adapters.script_files import ScriptFiles
 
 class Handlers:
     def __init__(self, output_file_creator: OutputFile, script_files: ScriptFiles, db: PostgresDB):

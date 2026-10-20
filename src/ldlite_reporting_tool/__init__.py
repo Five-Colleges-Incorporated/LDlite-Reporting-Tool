@@ -16,11 +16,11 @@ import re
 import winsound
 import dotenv
 import logging
-from handlers import Handlers
-from parameterized_scripts import ParameterType, ParameterValue
-from adapters.output_file import LocalOutputFile
-from adapters.script_files import ScriptFiles
-from adapters.postgres import PostgresDB
+from .handlers import Handlers
+from .parameterized_scripts import ParameterType, ParameterValue
+from .adapters.output_file import LocalOutputFile
+from .adapters.script_files import ScriptFiles
+from .adapters.postgres import PostgresDB
 
 # Popup Windows to give alert notices
 class PopupWindow:
@@ -241,16 +241,3 @@ def launch():
     handlers = Handlers(output_file_creator=outfile, script_files=script_files, db=db)
 
     ActionMenu(handlers)
-
-if __name__ == "__main__":
-    dotenv.load_dotenv()
-
-    os.makedirs(os.getenv('log_file_output_filepath'), exist_ok=True)
-
-    start_time = datetime.now()
-    logFile = f"{os.getenv('log_file_output_filepath')}/LDlite Reporting - {start_time.year}-{start_time.month}-{start_time.day}--{start_time.hour}-{start_time.minute}-{start_time.second}.log"
-    logging.basicConfig(filename=logFile, encoding='utf-8', level=logging.DEBUG,
-                    format='%(asctime)s | %(levelname)s | %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
-    logging.info("Beginning Log")
-    
-    launch()

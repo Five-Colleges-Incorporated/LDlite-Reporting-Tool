@@ -1,7 +1,7 @@
 import psycopg as postgres
 from contextlib import contextmanager
 import logging
-from parameterized_scripts import ParameterDefinition, ParameterValue, prepare_sql
+from ..parameterized_scripts import ParameterDefinition, ParameterValue, prepare_sql
 
 
 class PostgresDB:

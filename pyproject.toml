@@ -1,0 +1,95 @@
+[project]
+name = "ldlite-reporting-tool"
+version = "0.0.1"
+description = "A small web application for running and scheduling fixed LDLite reports."
+authors = [
+  { name = "Amelia Sutton", email = "ameliasutton@umass.edu" },
+  { name = "Katherine Bargar", email = "kbargar@fivecolleges.edu" },
+]
+dependencies = [
+  "tkcalendar>=1.6",
+  "psycopg>=3",
+  "python-dotenv>=1.2",
+  "sv_ttk>=2.6",
+]
+requires-python = ">=3.11"
+readme = "readme.md"
+license = { text = "GPL-3.0-only" }
+
+[project.urls]
+Homepage = "https://github.com/Five-Colleges-Incorporated/LDlite-Reporting-Tool"
+"Bug Tracker" = "https://github.com/Five-Colleges-Incorporated/LDlite-Reporting-Tool/issues"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm]
+distribution = true
+package-dir = "src"
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+addopts = ["--import-mode=importlib"]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+branch = true
+include = ["src/**"]
+
+[tool.ty.rules]
+blanket-ignore-comment = "error"
+missing-type-argument = "error"
+possibly-unresolved-reference = "warn"
+unsupported-dynamic-base = "warn"
+[tool.ty.analysis]
+strict-literal-narrowing = true
+strict-generic-narrowing = true
+
+[tool.ruff.lint]
+select = ["ALL"]
+fixable = ["ALL"]
+ignore = ["FBT", "D105", "FIX002", "TD002", "TD003", "COM812", "CPY001"]
+pydocstyle.convention = "google"
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D", "S", "INP001", "N813", "PLC0415", "PLR2004"]
+[tool.ruff.lint.flake8-annotations]
+mypy-init-return = true
+
+[tool.pdm.scripts]
+test-quick = "python -m pytest -vv -k 'not Integration' {args}"
+_testclean = { shell = "rm -f .coverage" }
+test.composite = [
+  "_testclean",
+  "python -m coverage run -m pytest -vv {args}",
+  "python -m coverage report",
+]
+_lockclean = { shell = "rm -f pylock.toml" }
+lock.composite = [
+  "_lockclean",
+  "pdm lock --python=3.11",
+  "pdm lock --lockfile pylock.maximal.toml --python=3.15",
+  "pdm lock --strategy direct_minimal_versions --lockfile pylock.minimal.toml --python=3.11",
+]
+test-install.composite = [
+  "pdm sync --lockfile=pylock.minimal.toml",
+  "pdm sync --lockfile=pylock.toml",
+]
+_buildclean = { shell = "rm -fdr exe_build" }
+build.composite = [
+  "pyinstaller --onefile --windowed ./src/main.py -n LDliteSingleSelect --distpath {run_cwd} --workpath exe_build --noconfirm",
+  "_buildclean",
+]
+
+
+[dependency-groups]
+dev = ["pyinstaller==6.22.3; python_version<'3.16'", "psycopg[binary]"]
+lint = ["ruff==0.17.0", "ty==0.0.87", "pre-commit-hooks==6.0.0"]
+test = [
+  # pytest-cases is only compatible with pytest<9.1 for the moment
+  # https://github.com/smarie/python-pytest-cases/issues/385
+  "pytest==9.0.3",
+  "pytest-cases==3.10.1",
+  "pytest-asyncio==1.4.0",
+  "coverage==7.16.2",
+]

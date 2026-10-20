@@ -1,0 +1,10 @@
+---
+name: ldlite-reporting-tool
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python>=3.11,<3.12
+  - libpq>=15
+  - pdm==2.29.2
+  - precious==1.0.0
