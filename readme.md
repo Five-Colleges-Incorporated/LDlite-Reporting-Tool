@@ -28,7 +28,7 @@ An Interface for running simple sql queries without a SQL IDE
 
 ## Optional Requirements
 * pyinstaller
-  
+
 
 ## __Instructions:__
 
@@ -37,45 +37,45 @@ An Interface for running simple sql queries without a SQL IDE
 Simplified installation and usage instructions can be found here: https://docs.google.com/document/d/1nGEkgKNdkKOrfOSI5eol9Vj2pLpjtTXabGmMVlcCztw/edit?usp=sharing
 
 * Create .env file in the following format:
-> dbname= {dbname}
-> 
-> user= {user}
-> 
-> host= {host}
-> 
-> port= {port}
-> 
-> password= {password}
-> 
-> query_filepath= {query filepath}
-> 
-> output_filepath= {output filepath}
-> 
-> log_file_output_filepath= {log filepath}
+> DBNAME= {dbname}
+>
+> USER= {user}
+>
+> HOST= {host}
+>
+> PORT= {port}
+>
+> PASSWORD= {password}
+>
+> QUERY_FILEPATH= {query filepath}
+>
+> OUTPUT_FILEPATH= {output filepath}
+>
+> LOG_FILE_OUTPUT_FILEPATH= {log filepath}
 
 
 * **query_filepath,**  **output_filepath,** and **log_file_output_filepath** will be created based on config information in runtime if they do not exist.
 
-* Place any .sql files you wish to run in your **query_filepath** directory.   
-  
+* Place any .sql files you wish to run in your **query_filepath** directory.  
+
 * If you need to generate an updated excecutable you only need Python 3.10+ installed. Run **generate_excecutable.bat**. After running, **LDliteSingleSelect.exe** will be up to date. This updates the executable from **LDliteSingleSelect.py** <u>**NOT**</u> from GitHub
 
 ### Usage:
 
 * Run the program either by launching **LDliteSingleSelect.exe**, running **LDliteSingleSelect.bat**, or by running **LDliteSingleSelect.py** through the command line.
-  
+
 * Using the dropdown select the **Query Name** for the .sql file you wish to excecute.
-  
+
 * If desired modify the **Output File Name**.
 
-* Enter values for any parameters the query requires. 
-  
+* Enter values for any parameters the query requires.
+
 * Select **Run Query**
-  
+
 * When finished use **File>Exit** to close the program
-  
+
 ## Notes
-* It is recommended that you use PyInstaller to generate an executable version of LDliteSingleSelect.py to run instead 
+* It is recommended that you use PyInstaller to generate an executable version of LDliteSingleSelect.py to run instead
 of running it through LDliteSingleSelect.bat
 
 * See https://github.com/5-C-Folio/LDlite-Queries for a collection of pre-created .sql files
@@ -110,9 +110,8 @@ of running it through LDliteSingleSelect.bat
     * List from file
   * Configuration now uses dotenv
   * Changed theme to improve readability
-    
+
 ## Known Issues
-* 
+*
 ## Planned Features
 *
-
